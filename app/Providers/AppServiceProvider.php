@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 
+use Illuminate\Support\Facades\URL;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -25,7 +27,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-
     }
 
     /**
@@ -33,8 +34,11 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(\Illuminate\Http\Request $request)
     {
+
+        
+        URL::forceScheme('https');
 
 
         $data['basic'] = (object) config('basic');
@@ -54,10 +58,10 @@ class AppServiceProvider extends ServiceProvider
                 $data['theme'] . 'partials.footer',
                 $data['theme'] . 'partials.topbar',
                 $data['theme'] . 'partials.topbar-auth'
-            ] , function ($view) {
+            ], function ($view) {
                 $languagesStr = '';
-                Language::orderBy('name')->where('is_active', 1)->get()->map(function ($item) use (&$languagesStr){
-                    $languagesStr .= '"'.strtoupper($item->short_name).'":"'. trim($item->name).'",';
+                Language::orderBy('name')->where('is_active', 1)->get()->map(function ($item) use (&$languagesStr) {
+                    $languagesStr .= '"' . strtoupper($item->short_name) . '":"' . trim($item->name) . '",';
                     return $languagesStr;
                 });
                 $view->with('languages', flagLanguage($languagesStr));
@@ -65,23 +69,25 @@ class AppServiceProvider extends ServiceProvider
                 $templateSection = ['contact-us'];
                 $view->with('contactUs', Template::templateMedia()->whereIn('section_name', $templateSection)->get()->groupBy('section_name'));
 
-                $contentSection = ['support','social'];
+                $contentSection = ['support', 'social'];
                 $view->with('contentDetails', ContentDetails::select('id', 'content_id', 'description')
                     ->whereHas('content', function ($query) use ($contentSection) {
                         return $query->whereIn('name', $contentSection);
                     })
-                    ->with(['content:id,name',
+                    ->with([
+                        'content:id,name',
                         'content.contentMedia' => function ($q) {
                             $q->select(['content_id', 'description']);
-                        }])
+                        }
+                    ])
                     ->get()->groupBy('content.name'));
             });
 
 
 
             view()->composer($data['theme'] . 'sections.deposit-withdraw', function ($view) {
-                $view->with('deposits', Fund::latest()->where('status', 1)->limit(5)->with('user','gateway')->get());
-                $view->with('withdraws', PayoutLog::latest()->where('status', 2)->limit(5)->with('user','method')->get());
+                $view->with('deposits', Fund::latest()->where('status', 1)->limit(5)->with('user', 'gateway')->get());
+                $view->with('withdraws', PayoutLog::latest()->where('status', 2)->limit(5)->with('user', 'method')->get());
             });
 
 
@@ -92,23 +98,13 @@ class AppServiceProvider extends ServiceProvider
             });
 
             view()->composer($data['theme'] . 'sections.news-letter', function ($view) {
-                $view->with('referralLevel', Referral::where('commission_type','deposit')->orderBy('level')->get());
+                $view->with('referralLevel', Referral::where('commission_type', 'deposit')->orderBy('level')->get());
             });
 
             view()->composer($data['theme'] . 'sections.we-accept', function ($view) {
-                $view->with('gateways', Gateway::where('status',1)->orderBy('sort_by')->get());
+                $view->with('gateways', Gateway::where('status', 1)->orderBy('sort_by')->get());
             });
-
-
         } catch (\Exception $e) {
-
         }
-
-
-
-
-
-
-
     }
 }

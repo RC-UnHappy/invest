@@ -143,6 +143,7 @@
             $('#loading').show();
             $('.modal-backdrop.fade').addClass('show');
             amount = $('.amount').val();
+            
             $.ajax({
                 url: "{{route('user.addFund.request')}}",
                 type: 'POST',
@@ -151,6 +152,7 @@
                     gateway
                 },
                 success(data) {
+                    console.log(data);
 
                     $('.payment-form').addClass('d-none');
                     $('.checkCalc').closest('.modal-footer').addClass('d-none');
@@ -189,12 +191,15 @@
                         </li>
                         </ul>`;
 
+                        console.log(data.payment_url);
+
                     $('.payment-info').html(htmlData)
                 },
                 complete: function () {
                     $('#loading').hide();
                 },
                 error(err) {
+                    console.log(err, 'el error');
                     var errors = err.responseJSON;
                     for (var obj in errors) {
                         $('.errors').text(`${errors[obj]}`)

@@ -10,6 +10,8 @@ class Payment
 {
     public static function prepareData($order, $gateway)
     {
+        // var_dump(route('ipn', [$gateway->code, $order->transaction]));
+        // die;
         $basic = (object) config('basic');
         $apiKey = $gateway->parameters->api_key ?? '';
         $postParam = [
@@ -31,9 +33,12 @@ class Payment
         $headers = [
             'Content-Type:application/json',
             'X-CC-Api-Key: ' . "$apiKey",
-            'X-CC-Version: 2018-03-22'];
+            'X-CC-Version: 2018-03-22'
+        ];
         $response = BasicCurl::curlPostRequestWithHeaders($url, $headers, $postParam);
         $response = json_decode($response);
+        // var_dump($response->data->hosted_url);
+        // die;
 
         if (@$response->error == '') {
             $send['redirect'] = true;
@@ -47,8 +52,27 @@ class Payment
 
     public static function ipn($request, $gateway, $order = null, $trx = null, $type = null)
     {
+        // Verifica en el header si existe esteparámetro, ya revise en el request y si lo envía
         $sentSign = $request->header('X-Cc-Webhook-Signature');
-        $sig = hash_hmac('sha256', $request, $gateway->parameters->secret);
+        $sig = hash_hmac('sha256', $request->getContent(), $gateway->parameters->secret);
+        
+        // error_log('$sentSign');
+        // die;
+        // error_log($sig);
+        // error_log('sig');
+        
+        // var_dump($sentSign);
+        // var_dump($sig);
+        // die;
+        
+        // error_log($sentSign == $sig);
+        // error_log('$sentSign == $sig');
+        $request = json_decode($request->getContent());
+        // error_log($esto->event->type);
+        // error_log('$request->event->type');
+        // // error_log($order->status);
+        // // error_log('$order->status');
+        // die;
         if ($sentSign == $sig) {
             if ($request->event->type == 'charge:confirmed' && $order->status == 0) {
                 BasicService::preparePaymentUpgradation($order);

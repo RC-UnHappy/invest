@@ -23,14 +23,15 @@ class PaymentController extends Controller
         if ($validator->fails()) {
             return response($validator->messages(), 422);
         }
-
+        
         $basic = (object)config('basic');
         $gate = Gateway::where('code', $request->gateway)->where('status', 1)->first();
         if (!$gate) {
             return response()->json(['error' => 'Invalid Gateway'], 422);
         }
-
+        
         $encPlanId =  session()->get('plan_id');
+        
         $plan_id = null;
         if ($encPlanId != null) {
             $amount = session()->get('amount');
@@ -48,7 +49,9 @@ class PaymentController extends Controller
         $charge = getAmount($gate->fixed_charge + ($reqAmount * $gate->percentage_charge / 100));
         $payable = getAmount($reqAmount + $charge);
         $final_amo = getAmount($payable * $gate->convention_rate);
+        
         $user = auth()->user();
+
 
         $fund = $this->newFund($request, $user, $gate, $charge, $final_amo, $reqAmount ,$plan_id);
 
@@ -92,14 +95,17 @@ class PaymentController extends Controller
         if(999 < $order->gateway->id){
             return view(template() . 'user.payment.manual', compact('order'));
         }
-
+        
+        
         $method = $order->gateway->code;
         try {
-
+            
             $getwayObj = 'App\\Services\\Gateway\\' . $method . '\\Payment';
             $data = $getwayObj::prepareData($order, $order->gateway);
             $data = json_decode($data);
-
+            
+            // var_dump($data);
+            // die;
         } catch (\Exception $exception) {
             return back()->with('error', $exception->getMessage());
         }
@@ -222,6 +228,10 @@ class PaymentController extends Controller
         if(isset($request->m_orderid)){
             $trx  = $request->m_orderid;
         }
+
+        // error_log('depositConfirm');
+        // die;
+
         try {
             $gateway = Gateway::where('code', $code)->first();
             if (!$gateway) throw new \Exception('Invalid Payment Gateway.');
@@ -231,6 +241,8 @@ class PaymentController extends Controller
             }
             $getwayObj = 'App\\Services\\Gateway\\' . $code . '\\Payment';
             $data = $getwayObj::ipn($request, $gateway, $order, $trx, $type);
+            // var_dump($data);
+            // die;
             if (isset($data['redirect'])) {
                 return redirect($data['redirect'])->with($data['status'], $data['msg']);
             }

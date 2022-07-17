@@ -20,12 +20,15 @@ class Payment
             'environment' => 'sandbox', // sandbox OR live
             'auth_token' => $gateway->parameters->api_key
         ));
+        // var_dump($gateway->code, $order->trx);
+        // die;
         $postParams = array(
             'order_id' => $order->trx,
             'price_amount' => $order->final_amount,
             'price_currency' => $order->gateway_currency,
             'receive_currency' => $order->gateway_currency,
-            'callback_url' => route('ipn', [$gateway->code, $order->trx]),
+            // 'callback_url' => route('ipn', [$gateway->code, $order->trx]),
+            'callback_url' => "https://invet-platform.requestcatcher.com/test",
             'cancel_url' => route('failed'),
             'success_url' => route('success'),
             'title' => "Payment To {$basic->site_title} Account",
